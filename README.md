@@ -65,6 +65,7 @@ Firestore [데이터](https://console.firebase.google.com/project/gate-archive/f
   firebase deploy --only firestore
   ```
 - **분류·대상 바꾸기**: `config.js`의 `CATEGORIES`, `TARGETS`
+- **자동 대표 이미지**: 이미지를 올리지 않은 자료는 WordPress의 무료 화면 캡처 서비스(mShots)로 웹앱 첫 화면을 찍어 보여 줍니다. 처음 한 번은 10~20초 걸리고, 그동안은 색 그림이 대신 보입니다. 로그인이 필요한 페이지나 화면이 늦게 뜨는 웹앱은 제대로 안 찍힐 수 있으니, 그럴 땐 캡처 이미지를 직접 올려 주세요.
 
 ## 무료 한도 (Spark 요금제)
 

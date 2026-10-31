@@ -94,12 +94,15 @@
       <label>만든 과정 · 프롬프트 <span class="hint-inline">다른 선생님이 고쳐 쓸 수 있게</span><textarea name="prompt" rows="5" maxlength="20000" placeholder="사용한 AI 도구와 프롬프트, 고친 과정 등"></textarea></label>
 
       <fieldset>
-        <legend>대표 이미지 <span class="hint-inline">웹앱 화면 캡처를 추천합니다 · 자동으로 줄여 저장</span></legend>
+        <legend>대표 이미지 <span class="hint-inline">선택 · 고르면 자동으로 줄여 저장</span></legend>
         <div class="thumb-pick">
           <div class="thumb-preview" id="thumbPreview"></div>
-          <div>
-            <label class="btn btn-line">이미지 선택<input type="file" id="thumbInput" accept="image/*" hidden></label>
-            <button class="btn btn-line" type="button" id="thumbClear" hidden>지우기</button>
+          <div class="thumb-side">
+            <p class="hint" id="thumbNote"></p>
+            <div class="thumb-btns">
+              <label class="btn btn-line">이미지 선택<input type="file" id="thumbInput" accept="image/*" hidden></label>
+              <button class="btn btn-line" type="button" id="thumbClear" hidden>지우기</button>
+            </div>
           </div>
         </div>
       </fieldset>

@@ -12,6 +12,18 @@
   const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(20)), (b) => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[b % 62]).join('');
   const safeUrl = (u) => (/^https?:\/\//i.test(u || '') ? u : '');
   const safeImg = (u) => (/^(data:image\/(png|jpe?g|webp);base64,|https:\/\/)/i.test(u || '') ? u : '');
+
+  // 대표 이미지가 없으면 WordPress mShots(무료)로 웹앱 첫 화면을 찍어 씁니다.
+  // 처음 요청하면 10~20초 동안 'Generating Preview' 대체 이미지(400×300)를 주므로, 진짜 화면(640×400)이 올 때까지 다시 불러옵니다.
+  const AUTO_W = 640;
+  const autoThumb = (url) => `https://s.wordpress.com/mshots/v1/${encodeURIComponent(url)}?w=${AUTO_W}&h=400&vpw=1280&vph=800`;
+  const isAutoReady = (img) => img.naturalWidth >= AUTO_W;
+  function retryAuto(img, onGiveUp) {
+    const n = Number(img.dataset.tries || 0) + 1;
+    if (n > 10) return onGiveUp();
+    img.dataset.tries = n;
+    setTimeout(() => { if (img.isConnected || img.dataset.offscreen) img.src = img.src.replace(/&n=\d+$/, '') + '&n=' + n; }, 4000);
+  }
   const store = {
     get(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } },
     set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* 저장 불가 환경 · 용량 초과 */ } },
@@ -200,8 +212,10 @@
   }
 
   function thumbHtml(item, label) {
-    const img = safeImg(item.thumb);
-    return (img ? `<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : '') +
+    const own = safeImg(item.thumb);
+    const url = safeUrl(item.url);
+    const img = own || (url ? autoThumb(url) : '');
+    return (img ? `<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()"${own ? '' : ' data-auto="1"'}>` : '') +
       `<span class="ph"><span>${esc(label)}</span></span>`;
   }
 
@@ -384,9 +398,25 @@
   }
 
   function renderThumbPreview() {
-    const img = safeImg(edit.thumb);
-    $('#thumbPreview').style.backgroundImage = img ? `url("${img}")` : '';
-    $('#thumbClear').hidden = !img;
+    const own = safeImg(edit.thumb);
+    const url = safeUrl($('#editForm').elements.url.value.trim());
+    const box = $('#thumbPreview');
+    $('#thumbClear').hidden = !own;
+    $('#thumbNote').textContent = own ? '' : url ? '웹앱 화면을 자동으로 찍는 중… (처음엔 10~20초)' : '이미지를 고르지 않으면 웹앱 첫 화면을 자동으로 찍어 씁니다.';
+    box.style.backgroundImage = own ? `url("${own}")` : '';
+    if (own || !url) return;
+
+    // 자동 화면은 준비될 때까지 화면 밖에서 불러 보고, 준비되면 미리보기에 띄웁니다.
+    const probe = new Image();
+    probe.dataset.offscreen = '1';
+    const current = url;
+    probe.onload = () => {
+      if (safeUrl($('#editForm').elements.url.value.trim()) !== current || safeImg(edit.thumb)) return;
+      if (!isAutoReady(probe)) return retryAuto(probe, () => { $('#thumbNote').textContent = '자동 화면을 찍지 못했습니다. 이미지를 직접 골라 주세요.'; });
+      box.style.backgroundImage = `url("${probe.src}")`;
+      $('#thumbNote').textContent = '자동으로 찍은 웹앱 화면입니다. 다른 이미지를 쓰려면 직접 고르세요.';
+    };
+    probe.src = autoThumb(url);
   }
 
   // 대표 이미지를 480×300 으로 잘라 줄입니다 (보통 20~40KB). 파일 저장소 없이 자료 문서에 같이 담습니다.
@@ -570,6 +600,19 @@
       }
     });
     $('#thumbClear').addEventListener('click', () => { edit.thumb = ''; renderThumbPreview(); });
+    let urlTimer;
+    $('#editForm').elements.url.addEventListener('input', () => {
+      clearTimeout(urlTimer);
+      urlTimer = setTimeout(() => { if (!safeImg(edit.thumb)) renderThumbPreview(); }, 600);
+    });
+
+    // 카드·자세히의 자동 화면: 준비되면 보이고, 아직이면 색 그림을 둔 채 다시 불러옴
+    document.addEventListener('load', (e) => {
+      const img = e.target;
+      if (!(img instanceof HTMLImageElement) || !img.dataset.auto) return;
+      if (isAutoReady(img)) img.classList.add('ready');
+      else retryAuto(img, () => img.remove());
+    }, true);
   }
 
   function fillStaticText() {

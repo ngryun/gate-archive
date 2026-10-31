@@ -143,7 +143,6 @@ a { color: inherit; }
 .form-error { margin: 0; color: #b3261e; font-size: 14px; background: #fdecea; padding: 8px 12px; border-radius: 8px; }
 
 .thumb-pick { display: flex; gap: 14px; align-items: center; }
-.thumb-pick > div:last-child { display: flex; gap: 6px; }
 .thumb-preview { width: 128px; aspect-ratio: 16 / 10; border-radius: 8px; background: var(--paper) center / cover no-repeat; border: 1px solid var(--line); flex: none; }
 .form-foot { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding-top: 6px; border-top: 1px solid var(--line); margin-top: 4px; padding-top: 16px; }
 .progress { margin-right: auto; font-size: 13px; color: var(--ink-2); }
@@ -190,3 +189,9 @@ a { color: inherit; }
 @media (max-width: 760px) {
   .hero-side { justify-items: stretch; }
 }
+
+/* ── 자동 화면 ── */
+.thumb img[data-auto]:not(.ready), .detail-thumb img[data-auto]:not(.ready) { opacity: 0; }
+.thumb img[data-auto], .detail-thumb img[data-auto] { object-position: top; transition: opacity .3s; }
+.thumb-pick > .thumb-side { display: grid; gap: 8px; }
+.thumb-btns { display: flex; gap: 6px; }
