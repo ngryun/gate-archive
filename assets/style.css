@@ -203,6 +203,9 @@ a { color: inherit; }
 .btn-dark:hover:not(:disabled) { background: var(--ink-2); }
 .btn-line { background: transparent; border-color: var(--line-2); color: var(--ink); }
 .btn-line:hover { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+.btn-accent { background: var(--red); color: #fff; border-color: var(--red); box-shadow: 0 8px 20px -10px rgb(216 67 42 / .7); }
+.btn-accent:hover:not(:disabled) { background: #b8341f; border-color: #b8341f; }
+.btn-accent .plus { opacity: .85; }
 .btn-ghost-light { background: transparent; color: var(--paper); border-color: rgb(255 255 255 / .3); }
 .btn-ghost-light:hover { border-color: var(--paper); }
 .btn-block { width: 100%; height: 46px; }
