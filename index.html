@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GATE 자료실 · 강원미술교육연구회</title>
   <meta name="description" content="강원미술교육연구회(GATE) 선생님들이 함께 나누는 미술 수업 웹앱 자료실">
-  <meta name="theme-color" content="#f2efe8">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23f2efe8'/%3E%3Ccircle cx='19' cy='13' r='10' fill='%232b44b8'/%3E%3Crect x='4' y='15' width='13' height='13' fill='%23d8432a' style='mix-blend-mode:multiply'/%3E%3C/svg%3E">
+  <meta name="theme-color" content="#f4f2ed">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23f4f2ed'/%3E%3Ccircle cx='19' cy='13' r='10' fill='%232b44b8'/%3E%3Crect x='4' y='15' width='13' height='13' fill='%23d8432a' style='mix-blend-mode:multiply'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Noto+Serif+KR:wght@300;400;500&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="assets/style.css">
 </head>
@@ -28,42 +28,76 @@
 
   <header class="masthead">
     <div class="wrap masthead-inner">
-      <a class="brand" href="./" aria-label="GATE 자료실 처음으로">
+      <a class="brand" href="#top" aria-label="GATE 자료실 처음으로">
         <span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
         <span class="brand-name">GATE</span>
         <span class="brand-org" id="brandOrg"></span>
       </a>
-      <button class="btn btn-dark" id="newItemBtn" type="button">웹앱 등록<span class="plus" aria-hidden="true">+</span></button>
+      <div class="masthead-right">
+        <nav class="masthead-nav" aria-label="바로가기">
+          <a href="#collection">Collection</a>
+          <a href="#collection" data-view="index">Index</a>
+        </nav>
+        <button class="btn btn-line" id="newItemBtn" type="button">웹앱 등록<span class="plus" aria-hidden="true">+</span></button>
+      </div>
     </div>
   </header>
 
-  <section class="wrap hero">
-    <div class="hero-text">
-      <p class="eyebrow"><span id="orgName"></span><span class="rule" aria-hidden="true"></span><span class="eyebrow-en">Gangwon, Korea</span></p>
-      <h1 class="title">
-        <span class="title-gate">GATE</span>
-        <span class="title-rest" id="siteTitleRest">자료실</span>
-      </h1>
-      <p class="title-en">An open archive of web apps<br>for the art classroom</p>
+  <section class="wrap hero" id="top">
+    <p class="eyebrow">
+      <span class="org" id="orgName"></span>
+      <span class="rule" aria-hidden="true"></span>
+      <span class="en">Archive of web apps for art education</span>
+      <span class="loc">Gangwon, KR</span>
+    </p>
+    <div class="hero-grid">
+      <div class="hero-text">
+        <h1 class="title">
+          <span class="title-gate">GATE</span>
+          <span class="title-rest" id="siteTitleRest">자료실</span>
+        </h1>
+        <p class="title-en">An open archive of web apps,<br>made by art teachers for the classroom</p>
+      </div>
+      <figure class="hero-art" aria-hidden="true">
+        <svg viewBox="0 0 420 420">
+          <defs>
+            <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2="7" stroke="#121211" stroke-width=".9"/>
+            </pattern>
+          </defs>
+          <path class="ln" d="M40 40H150A110 110 0 0 1 40 150Z"/>
+          <rect class="hatch" x="72" y="196" width="164" height="164"/>
+          <rect class="ln" x="72" y="196" width="164" height="164"/>
+          <circle class="ln a-circle" cx="250" cy="170" r="122"/>
+          <path class="a-half" d="M236 360A92 92 0 0 1 420 360Z" fill="#d8432a"/>
+          <line class="ln" x1="14" y1="402" x2="402" y2="34"/>
+          <line class="ln" x1="0" y1="360.5" x2="420" y2="360.5"/>
+          <g class="ln" stroke-width="1">
+            <line x1="72" y1="360" x2="72" y2="372"/><line x1="154" y1="360" x2="154" y2="368"/><line x1="236" y1="360" x2="236" y2="372"/>
+          </g>
+          <circle class="a-dot" cx="372" cy="170" r="7" fill="#121211"/>
+        </svg>
+        <figcaption><b>Fig. 1</b><span>구성 습작 — 원, 사각, 반원, 사분원</span></figcaption>
+      </figure>
+    </div>
+    <div class="hero-foot">
       <p class="intro" id="intro"></p>
       <dl class="stats" id="stats"></dl>
     </div>
-    <figure class="hero-art" aria-hidden="true">
-      <svg viewBox="0 0 420 420">
-        <path class="a-quarter" d="M40 40H150A110 110 0 0 1 40 150Z" fill="#17735c"/>
-        <circle class="a-circle" cx="252" cy="168" r="122" fill="#2b44b8"/>
-        <rect class="a-square" x="72" y="196" width="164" height="164" fill="#d8432a"/>
-        <path class="a-half" d="M236 360A92 92 0 0 1 420 360Z" fill="#e0a526"/>
-        <line class="a-line" x1="14" y1="402" x2="402" y2="34" stroke="#141414" stroke-width="1.6"/>
-        <line x1="0" y1="360.5" x2="420" y2="360.5" stroke="#141414" stroke-width="1.2"/>
-        <circle class="a-dot" cx="352" cy="82" r="9" fill="#141414"/>
-      </svg>
-      <figcaption>Composition for GATE — 원, 사각, 반원, 사분원</figcaption>
-    </figure>
   </section>
 
-  <main class="wrap">
-    <div class="index">
+  <main class="wrap" id="collection">
+    <div class="section-head">
+      <p class="section-no">01 &nbsp;Collection</p>
+      <div class="section-row">
+        <h2 class="section-title">Collection<span class="section-kr">소장 웹앱</span></h2>
+        <div class="view-switch" role="group" aria-label="보기 방식">
+          <button class="view-btn" type="button" data-view="grid" aria-pressed="true">Grid</button>
+          <button class="view-btn" type="button" data-view="index" aria-pressed="false">Index</button>
+        </div>
+      </div>
+    </div>
+    <div class="toolbar">
       <nav class="filters" aria-label="자료 필터">
         <div class="chip-row" id="categoryChips" role="group" aria-label="분류"></div>
         <div class="chip-row small" id="targetChips" role="group" aria-label="대상"></div>
@@ -73,10 +107,7 @@
         <input id="searchInput" type="search" placeholder="색채, 감상, 퀴즈…" autocomplete="off" aria-label="웹앱 검색">
       </label>
     </div>
-    <div class="section-head">
-      <h2 class="section-title">Collection</h2>
-      <p class="result-line" id="resultLine"></p>
-    </div>
+    <p class="result-line" id="resultLine"></p>
     <section class="grid" id="grid" aria-live="polite"></section>
   </main>
 
@@ -86,7 +117,7 @@
       <div class="footer-meta">
         <span>© <span id="year"></span> <span id="footerOrg"></span></span>
         <span class="footer-note">선생님이 만들고, 선생님이 나눕니다.</span>
-        <button class="link-btn" id="loginOpenBtn" type="button">관리자 로그인</button>
+        <span><a href="#top">위로 ↑</a> &nbsp;·&nbsp; <button class="link-btn" id="loginOpenBtn" type="button">관리자 로그인</button></span>
       </div>
     </div>
   </footer>

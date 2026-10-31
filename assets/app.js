@@ -47,27 +47,29 @@
     const left = r() < 0.5; // 큰 원을 왼쪽에 둘지
     const base = n(66, 80);
     const s = [];
-    if (r() < 0.35) s.push(`<rect y="${base}" width="160" height="${100 - base}" fill="${c3}" opacity=".3"/>`);
-    // 큰 원
+    const line = `fill="none" stroke="${ink}" stroke-width=".7"`;
+    // 큰 원: 분류색으로 칠한 유일한 면
     const R = n(20, 34);
     const cx = left ? n(28, 64) : n(96, 132);
-    s.push(`<circle cx="${cx}" cy="${n(R, base - 4)}" r="${R}" fill="${color}"/>`);
-    // 맞은편에 바닥선 위로 선 도형: 사각 · 반원 · 삼각
+    s.push(`<circle cx="${cx}" cy="${n(R, base - 4)}" r="${R}" fill="${color}" opacity=".92"/>`);
+    // 맞은편에 바닥선 위로 선 도형: 사각(빗금) · 반원 · 삼각 — 선으로만
     const w = n(24, 40);
     const bx = left ? n(76, 150 - w) : n(10, 84 - w);
     const kind = Math.floor(r() * 3);
-    if (kind === 0) s.push(`<rect x="${bx}" y="${base - w}" width="${w}" height="${w}" fill="${c2}"/>`);
-    else if (kind === 1) s.push(`<path d="M${bx} ${base}a${w / 2} ${w / 2} 0 0 1 ${w} 0z" fill="${c2}"/>`);
-    else s.push(`<path d="M${bx} ${base}l${w / 2} ${-w}l${w / 2} ${w}z" fill="${c2}"/>`);
-    // 모서리 사분원
+    if (kind === 0) s.push(`<rect x="${bx}" y="${base - w}" width="${w}" height="${w}" fill="url(#h-${seed})"/><rect x="${bx}" y="${base - w}" width="${w}" height="${w}" ${line}/>`);
+    else if (kind === 1) s.push(`<path d="M${bx} ${base}a${w / 2} ${w / 2} 0 0 1 ${w} 0z" ${line}/>`);
+    else s.push(`<path d="M${bx} ${base}l${w / 2} ${-w}l${w / 2} ${w}z" ${line}/>`);
+    // 모서리 사분원: 두 번째 색, 작게
     if (r() < 0.6) {
       const q = n(12, 22);
-      s.push(`<path d="M0 0h${q}a${q} ${q} 0 0 1 -${q} ${q}z"${left ? ' transform="matrix(-1 0 0 1 160 0)"' : ''} fill="${c3}"/>`);
+      s.push(`<path d="M0 0h${q}a${q} ${q} 0 0 1 -${q} ${q}z"${left ? ' transform="matrix(-1 0 0 1 160 0)"' : ''} fill="${c2}" opacity=".9"/>`);
     }
+    void c3;
     s.push(`<line x1="0" y1="${base}.5" x2="160" y2="${base}.5" stroke="${ink}" stroke-width=".6"/>`);
     if (r() < 0.55) s.push(`<line x1="${n(0, 50)}" y1="100" x2="${n(110, 160)}" y2="${n(0, 24)}" stroke="${ink}" stroke-width=".6"/>`);
     else { const x = n(20, 140); s.push(`<line x1="${x}" y1="${n(4, 20)}" x2="${x}" y2="100" stroke="${ink}" stroke-width=".6"/>`); }
     s.push(`<circle cx="${n(12, 148)}" cy="${n(8, 26)}" r="${n(2, 4)}" fill="${ink}"/>`);
+    s.unshift(`<defs><pattern id="h-${seed}" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="3" stroke="${ink}" stroke-width=".45"/></pattern></defs>`);
     return `<svg class="art" viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${s.join('')}</svg>`;
   }
 
@@ -219,7 +221,7 @@
 
   /* ───────── 상태 ───────── */
 
-  const state = { items: [], loaded: false, cat: ALL, target: ALL, q: '', session: null };
+  const state = { items: [], loaded: false, cat: ALL, target: ALL, q: '', session: null, view: store.get('gate-view', 'grid') === 'index' ? 'index' : 'grid' };
   const catOf = (key) => C.CATEGORIES.find((c) => c.key === key) || { key: key || '기타', color: '#6b6875' };
   const byNewest = (a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
   const canEdit = (item) => !!state.session || !item.createdBy;
@@ -288,7 +290,7 @@
         `<button class="btn btn-line btn-sm btn-danger" data-del="${esc(item.id)}">삭제</button></span>`
       : '';
     return `<article class="card" style="--c:${cat.color};--i:${Math.min(i, 8)}">
-      <button class="thumb" type="button" data-open="${esc(item.id)}" aria-label="${esc(item.title)} 자세히 보기">${thumbHtml(item)}</button>
+      <button class="thumb" type="button" data-open="${esc(item.id)}" aria-label="${esc(item.title)} 자세히 보기">${thumbHtml(item)}<span class="go" aria-hidden="true">↗</span></button>
       <div class="label">
         ${labelTop(item, cat)}
         <h3><a href="#${esc(item.id)}">${esc(item.title)}</a></h3>
@@ -299,26 +301,74 @@
       <div class="card-foot">
         <a class="text-btn" href="#${esc(item.id)}">자세히</a>
         ${item.prompt ? `<button class="text-btn" type="button" data-prompt="${esc(item.id)}">프롬프트</button>` : ''}
-        ${url ? `<a class="btn btn-dark btn-sm open" href="${esc(url)}" target="_blank" rel="noopener">열기 ↗</a>` : ''}
+        ${url ? `<a class="text-btn open" href="${esc(url)}" target="_blank" rel="noopener">웹앱 열기 ↗</a>` : ''}
         ${admin}
       </div>
     </article>`;
   }
 
+  // 색인 보기: 도록 뒤쪽의 작품 목록처럼 표로
+  function row(item) {
+    const cat = catOf(item.category);
+    const url = safeUrl(item.url);
+    const admin = state.session
+      ? `<span class="admin-tools"><button class="btn btn-line btn-sm" data-edit="${esc(item.id)}">수정</button>` +
+        `<button class="btn btn-line btn-sm btn-danger" data-del="${esc(item.id)}">삭제</button></span>`
+      : '';
+    return `<tr style="--c:${cat.color}">
+      <td class="t-no">${numberOf(item)}</td>
+      <td class="t-title"><a href="#${esc(item.id)}">${esc(item.title)}</a>${tagsHtml(item)}${admin}</td>
+      <td class="t-author">${esc(item.author || '—')}</td>
+      <td class="t-cat"><span class="cat"><i></i>${esc(cat.key)}</span></td>
+      <td class="t-target">${esc(split(item.target).join(', ') || '—')}</td>
+      <td class="t-dur">${esc(item.duration || '—')}</td>
+      <td class="t-date">${fmtDate(item.createdAt)}</td>
+      <td class="t-open">${url ? `<a class="text-btn" href="${esc(url)}" target="_blank" rel="noopener">열기 ↗</a>` : ''}</td>
+    </tr>`;
+  }
+
+  // 화면에 들어올 때 하나씩 떠오르게
+  const revealer = 'IntersectionObserver' in window
+    ? new IntersectionObserver((entries) => {
+        for (const en of entries) if (en.isIntersecting) { en.target.classList.add('in'); revealer.unobserve(en.target); }
+      }, { rootMargin: '0px 0px -6% 0px', threshold: 0.08 })
+    : null;
+  function reveal(container) {
+    const cards = [...container.querySelectorAll('.card')];
+    if (!revealer) return cards.forEach((c) => c.classList.add('in'));
+    // 첫 화면에 보이는 것들은 열 순서대로 차례차례, 그 아래는 스크롤해 들어올 때
+    const cols = Math.max(1, Math.round(container.clientWidth / 360));
+    cards.forEach((c, i) => { c.style.setProperty('--i', i % cols); revealer.observe(c); });
+  }
+
   function renderGrid() {
     const grid = $('#grid');
     if (!state.loaded) {
+      grid.className = 'grid';
       grid.innerHTML = '<div class="skeleton"></div>'.repeat(3);
       $('#resultLine').textContent = '불러오는 중…';
       return;
     }
     const list = state.items.filter((it) => matches(it));
-    $('#resultLine').textContent = state.q || state.cat !== ALL || state.target !== ALL
-      ? `웹앱 ${list.length}점` + (state.q ? ` · “${state.q}” 검색 결과` : '')
-      : `웹앱 ${list.length}점 · 최근 등록 순`;
-    grid.innerHTML = list.length
-      ? list.map(card).join('')
-      : `<div class="empty">${state.items.length ? '조건에 맞는 웹앱이 없습니다.' : '아직 등록된 웹앱이 없습니다. 첫 웹앱을 등록해 주세요!'}</div>`;
+    $('#resultLine').innerHTML = `<span>${state.q || state.cat !== ALL || state.target !== ALL
+      ? `${list.length}점` + (state.q ? ` · “${esc(state.q)}” 검색 결과` : '')
+      : `전체 ${list.length}점`}</span><span>최근 등록 순</span>`;
+    document.querySelectorAll('.view-btn').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === state.view)));
+    if (!list.length) {
+      grid.className = 'grid';
+      grid.innerHTML = `<div class="empty">${state.items.length ? '조건에 맞는 웹앱이 없습니다.' : '아직 등록된 웹앱이 없습니다. 첫 웹앱을 등록해 주세요!'}</div>`;
+      return;
+    }
+    if (state.view === 'index') {
+      grid.className = 'list-wrap';
+      grid.innerHTML = `<table class="list"><thead><tr>
+        <th>No.</th><th>제목</th><th class="t-author">제작</th><th class="t-cat">분류</th><th class="t-target">대상</th><th class="t-dur">시간</th><th class="t-date">등록</th><th class="t-open"></th>
+      </tr></thead><tbody>${list.map(row).join('')}</tbody></table>`;
+      return;
+    }
+    grid.className = 'grid';
+    grid.innerHTML = list.map(card).join('');
+    reveal(grid);
   }
 
   function renderStats() {
@@ -623,7 +673,8 @@
       const t = e.target.closest('button, a');
       if (!t) return;
       const d = t.dataset;
-      if (d.cat !== undefined) { state.cat = d.cat; render(); }
+      if (d.view) { state.view = d.view === 'index' ? 'index' : 'grid'; store.set('gate-view', state.view); renderGrid(); }
+      else if (d.cat !== undefined) { state.cat = d.cat; render(); }
       else if (d.target !== undefined) { state.target = d.target; render(); }
       else if (d.open) location.hash = d.open;
       else if (d.prompt) { history.replaceState(null, '', '#' + d.prompt); openDetail(d.prompt, true); }
