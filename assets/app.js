@@ -24,6 +24,53 @@
     img.dataset.tries = n;
     setTimeout(() => { if (img.isConnected || img.dataset.offscreen) img.src = img.src.replace(/&n=\d+$/, '') + '&n=' + n; }, 4000);
   }
+  // 이미지가 오기 전(또는 없을 때) 자리에 두는 추상 구성. 자료 ID로 모양이 정해져 늘 같은 그림이 나옵니다.
+  const PIGMENTS = ['#2b44b8', '#d8432a', '#e0a526', '#17735c'];
+  function seeded(seed) {
+    let h = 2166136261;
+    for (const ch of String(seed)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+    return () => {
+      h = (h + 0x6d2b79f5) | 0;
+      let t = Math.imul(h ^ (h >>> 15), 1 | h);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function artwork(seed, color) {
+    const r = seeded(seed);
+    const n = (a, b) => Math.round(a + r() * (b - a));
+    const pick = (a) => a[Math.floor(r() * a.length)];
+    const others = PIGMENTS.filter((c) => c.toLowerCase() !== String(color).toLowerCase());
+    const c2 = pick(others);
+    const c3 = pick(others.filter((c) => c !== c2));
+    const ink = '#141414';
+    const left = r() < 0.5; // 큰 원을 왼쪽에 둘지
+    const base = n(66, 80);
+    const s = [];
+    if (r() < 0.35) s.push(`<rect y="${base}" width="160" height="${100 - base}" fill="${c3}" opacity=".3"/>`);
+    // 큰 원
+    const R = n(20, 34);
+    const cx = left ? n(28, 64) : n(96, 132);
+    s.push(`<circle cx="${cx}" cy="${n(R, base - 4)}" r="${R}" fill="${color}"/>`);
+    // 맞은편에 바닥선 위로 선 도형: 사각 · 반원 · 삼각
+    const w = n(24, 40);
+    const bx = left ? n(76, 150 - w) : n(10, 84 - w);
+    const kind = Math.floor(r() * 3);
+    if (kind === 0) s.push(`<rect x="${bx}" y="${base - w}" width="${w}" height="${w}" fill="${c2}"/>`);
+    else if (kind === 1) s.push(`<path d="M${bx} ${base}a${w / 2} ${w / 2} 0 0 1 ${w} 0z" fill="${c2}"/>`);
+    else s.push(`<path d="M${bx} ${base}l${w / 2} ${-w}l${w / 2} ${w}z" fill="${c2}"/>`);
+    // 모서리 사분원
+    if (r() < 0.6) {
+      const q = n(12, 22);
+      s.push(`<path d="M0 0h${q}a${q} ${q} 0 0 1 -${q} ${q}z"${left ? ' transform="matrix(-1 0 0 1 160 0)"' : ''} fill="${c3}"/>`);
+    }
+    s.push(`<line x1="0" y1="${base}.5" x2="160" y2="${base}.5" stroke="${ink}" stroke-width=".6"/>`);
+    if (r() < 0.55) s.push(`<line x1="${n(0, 50)}" y1="100" x2="${n(110, 160)}" y2="${n(0, 24)}" stroke="${ink}" stroke-width=".6"/>`);
+    else { const x = n(20, 140); s.push(`<line x1="${x}" y1="${n(4, 20)}" x2="${x}" y2="100" stroke="${ink}" stroke-width=".6"/>`); }
+    s.push(`<circle cx="${n(12, 148)}" cy="${n(8, 26)}" r="${n(2, 4)}" fill="${ink}"/>`);
+    return `<svg class="art" viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${s.join('')}</svg>`;
+  }
+
   const store = {
     get(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } },
     set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* 저장 불가 환경 · 용량 초과 */ } },
@@ -177,8 +224,15 @@
   const byNewest = (a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
   const canEdit = (item) => !!state.session || !item.createdBy;
 
+  // 작품 번호: 먼저 올라온 순서대로 No. 001, 002 …
+  const numberOf = (item) => 'No. ' + String(item.no || 0).padStart(3, '0');
+  function setItems(items) {
+    [...items].sort((a, b) => byNewest(b, a)).forEach((x, i) => { x.no = i + 1; });
+    state.items = items.sort(byNewest);
+  }
+
   async function refresh() {
-    state.items = (await api.sync()).sort(byNewest);
+    setItems(await api.sync());
     state.loaded = true;
     render();
   }
@@ -197,7 +251,7 @@
 
   function renderChips() {
     const chip = (label, active, count, color, data) =>
-      `<button type="button" class="chip" aria-pressed="${active}" ${color ? `style="--c:${color}"` : ''} ${data}>` +
+      `<button type="button" class="chip" aria-pressed="${active}" ${color ? `style="--c:${color}"` : ''} ${data}${count || active ? '' : ' data-empty'}>` +
       `${color ? '<span class="dot"></span>' : ''}${esc(label)}<span class="n">${count}</span></button>`;
 
     $('#categoryChips').innerHTML = [{ key: ALL }, ...C.CATEGORIES].map((c) => {
@@ -211,38 +265,41 @@
     }).join('');
   }
 
-  function thumbHtml(item, label) {
+  function thumbHtml(item) {
     const own = safeImg(item.thumb);
     const url = safeUrl(item.url);
     const img = own || (url ? autoThumb(url) : '');
-    return (img ? `<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()"${own ? '' : ' data-auto="1"'}>` : '') +
-      `<span class="ph"><span>${esc(label)}</span></span>`;
+    return artwork(item.id, catOf(item.category).color) +
+      (img ? `<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()"${own ? '' : ' data-auto="1"'}>` : '');
   }
 
-  function card(item) {
+  // 전시 캡션처럼: 번호 · 분류 / 제목 / 제작 / 대상 · 시간
+  const specOf = (item) => [split(item.target).join(', '), item.duration].filter(Boolean).join(' · ');
+  const labelTop = (item, cat) =>
+    `<div class="label-top"><span class="no">${numberOf(item)}</span><span class="cat"><i></i>${esc(cat.key)}</span></div>`;
+  const tagsHtml = (item) => (item.tags ? `<div class="tags">${split(item.tags).map((t) => `<span>#${esc(t)}</span>`).join('')}</div>` : '');
+
+  function card(item, i) {
     const cat = catOf(item.category);
     const url = safeUrl(item.url);
+    const spec = specOf(item);
     const admin = state.session
       ? `<span class="admin-tools"><button class="btn btn-line btn-sm" data-edit="${esc(item.id)}">수정</button>` +
         `<button class="btn btn-line btn-sm btn-danger" data-del="${esc(item.id)}">삭제</button></span>`
       : '';
-    return `<article class="card" style="--c:${cat.color}">
-      <button class="thumb" type="button" data-open="${esc(item.id)}" aria-label="${esc(item.title)} 자세히 보기">
-        <span class="badge">${esc(cat.key)}</span>${thumbHtml(item, item.title)}
-      </button>
-      <div class="card-body">
+    return `<article class="card" style="--c:${cat.color};--i:${Math.min(i, 8)}">
+      <button class="thumb" type="button" data-open="${esc(item.id)}" aria-label="${esc(item.title)} 자세히 보기">${thumbHtml(item)}</button>
+      <div class="label">
+        ${labelTop(item, cat)}
         <h3><a href="#${esc(item.id)}">${esc(item.title)}</a></h3>
-        <dl class="meta">
-          ${item.target ? `<dt>대상</dt><dd>${esc(split(item.target).join(', '))}</dd>` : ''}
-          ${item.author ? `<dt>제작</dt><dd>${esc(item.author)}</dd>` : ''}
-          ${item.duration ? `<dt>시간</dt><dd>${esc(item.duration)}</dd>` : ''}
-        </dl>
-        ${item.tags ? `<div class="tags">${split(item.tags).map((t) => `<span>#${esc(t)}</span>`).join('')}</div>` : ''}
+        ${item.author ? `<p class="author">${esc(item.author)}</p>` : ''}
+        ${spec ? `<p class="spec">${esc(spec)}</p>` : ''}
+        ${tagsHtml(item)}
       </div>
       <div class="card-foot">
-        <a class="btn btn-line btn-sm" href="#${esc(item.id)}">자세히</a>
-        ${item.prompt ? `<button class="btn btn-soft btn-sm" type="button" data-prompt="${esc(item.id)}">프롬프트</button>` : ''}
-        ${url ? `<a class="btn btn-dark btn-sm" href="${esc(url)}" target="_blank" rel="noopener">열기 ↗</a>` : ''}
+        <a class="text-btn" href="#${esc(item.id)}">자세히</a>
+        ${item.prompt ? `<button class="text-btn" type="button" data-prompt="${esc(item.id)}">프롬프트</button>` : ''}
+        ${url ? `<a class="btn btn-dark btn-sm open" href="${esc(url)}" target="_blank" rel="noopener">열기 ↗</a>` : ''}
         ${admin}
       </div>
     </article>`;
@@ -251,20 +308,31 @@
   function renderGrid() {
     const grid = $('#grid');
     if (!state.loaded) {
-      grid.innerHTML = '<div class="skeleton"></div>'.repeat(4);
+      grid.innerHTML = '<div class="skeleton"></div>'.repeat(3);
       $('#resultLine').textContent = '불러오는 중…';
       return;
     }
     const list = state.items.filter((it) => matches(it));
     $('#resultLine').textContent = state.q || state.cat !== ALL || state.target !== ALL
-      ? `웹앱 ${list.length}개` + (state.q ? ` · “${state.q}” 검색 결과` : '')
-      : `모든 웹앱 ${list.length}개 · 최근 등록 순`;
+      ? `웹앱 ${list.length}점` + (state.q ? ` · “${state.q}” 검색 결과` : '')
+      : `웹앱 ${list.length}점 · 최근 등록 순`;
     grid.innerHTML = list.length
       ? list.map(card).join('')
       : `<div class="empty">${state.items.length ? '조건에 맞는 웹앱이 없습니다.' : '아직 등록된 웹앱이 없습니다. 첫 웹앱을 등록해 주세요!'}</div>`;
   }
 
-  function render() { renderChips(); renderGrid(); }
+  function renderStats() {
+    if (!state.loaded) return;
+    const authors = new Set(state.items.map((x) => (x.author || '').trim()).filter(Boolean));
+    const latest = state.items[0];
+    const d = latest && new Date(Number(latest.createdAt));
+    $('#stats').innerHTML =
+      `<div><dt>소장 웹앱</dt><dd>${state.items.length}<small>점</small></dd></div>` +
+      `<div><dt>참여 선생님</dt><dd>${authors.size}<small>명</small></dd></div>` +
+      (d && !isNaN(d) ? `<div><dt>최근 등록</dt><dd>${d.getMonth() + 1}.${String(d.getDate()).padStart(2, '0')}</dd></div>` : '');
+  }
+
+  function render() { renderChips(); renderGrid(); renderStats(); }
 
   function renderSession() {
     $('#adminBar').hidden = !state.session;
@@ -279,30 +347,31 @@
     if (!item) return;
     const cat = catOf(item.category);
     const url = safeUrl(item.url);
+    $('#detailBody').style.setProperty('--c', cat.color);
     $('#detailBody').innerHTML = `
-      <div class="detail-thumb" style="--c:${cat.color}">${thumbHtml(item, cat.key)}</div>
-      <div class="modal-head">
-        <h2>${esc(item.title)}</h2>
+      <div class="detail-media"><div class="detail-thumb">${thumbHtml(item)}</div></div>
+      <div class="detail-info">
         <button class="icon-btn" type="button" data-close aria-label="닫기">×</button>
-      </div>
-      <div class="detail-meta">
-        <span><b>분류</b>${esc(cat.key)}</span>
-        ${item.target ? `<span><b>대상</b>${esc(split(item.target).join(', '))}</span>` : ''}
-        ${item.author ? `<span><b>제작</b>${esc(item.author)}</span>` : ''}
-        ${item.duration ? `<span><b>시간</b>${esc(item.duration)}</span>` : ''}
-        <span><b>등록</b>${fmtDate(item.createdAt)}</span>
-      </div>
-      ${item.description ? `<p class="detail-desc">${esc(item.description)}</p>` : ''}
-      ${item.tags ? `<div class="tags" style="margin:-6px 0 18px">${split(item.tags).map((t) => `<span>#${esc(t)}</span>`).join('')}</div>` : ''}
-      <div class="detail-actions">
-        ${url ? `<a class="btn btn-dark" href="${esc(url)}" target="_blank" rel="noopener">웹앱 열기 ↗</a>
-          <button class="btn btn-line" type="button" data-qr="${esc(item.id)}">QR 코드</button>` : ''}
-        <button class="btn btn-line" type="button" data-copy="${esc(item.id)}">이 자료 주소 복사</button>
-        ${canEdit(item) ? `<button class="btn btn-line" type="button" data-edit="${esc(item.id)}">수정</button>
-          <button class="btn btn-line btn-danger" type="button" data-del="${esc(item.id)}">삭제</button>` : ''}
+        ${labelTop(item, cat)}
+        <h2>${esc(item.title)}</h2>
+        ${item.author ? `<p class="author">${esc(item.author)}</p>` : ''}
+        <dl class="detail-meta">
+          ${item.target ? `<dt>대상</dt><dd>${esc(split(item.target).join(', '))}</dd>` : ''}
+          ${item.duration ? `<dt>시간</dt><dd>${esc(item.duration)}</dd>` : ''}
+          <dt>등록</dt><dd>${fmtDate(item.createdAt)}</dd>
+        </dl>
+        ${item.description ? `<p class="detail-desc">${esc(item.description)}</p>` : ''}
+        ${tagsHtml(item)}
+        <div class="detail-actions">
+          ${url ? `<a class="btn btn-dark" href="${esc(url)}" target="_blank" rel="noopener">웹앱 열기 ↗</a>
+            <button class="btn btn-line btn-sm" type="button" data-qr="${esc(item.id)}">QR 코드</button>` : ''}
+          <button class="btn btn-line btn-sm" type="button" data-copy="${esc(item.id)}">주소 복사</button>
+          ${canEdit(item) ? `<button class="btn btn-line btn-sm" type="button" data-edit="${esc(item.id)}">수정</button>
+            <button class="btn btn-line btn-sm btn-danger" type="button" data-del="${esc(item.id)}">삭제</button>` : ''}
+        </div>
       </div>
       ${item.prompt ? `<section class="prompt" id="promptSection">
-        <div class="prompt-head"><h3>만든 과정 · 프롬프트</h3>
+        <div class="prompt-head"><div><p class="kicker">Process &amp; Prompt</p><h3>만든 과정 · 프롬프트</h3></div>
           <button class="btn btn-line btn-sm" type="button" data-copy-prompt="${esc(item.id)}">복사</button></div>
         <pre>${esc(item.prompt)}</pre></section>` : ''}`;
     const dlg = $('#detailDialog');
@@ -618,6 +687,7 @@
   function fillStaticText() {
     document.title = `${C.SITE_TITLE} · ${C.ORG_NAME}`;
     $('#orgName').textContent = C.ORG_NAME;
+    $('#brandOrg').textContent = C.ORG_NAME;
     $('#siteTitleRest').textContent = C.SITE_TITLE.replace(/^GATE\s*/, '');
     $('#intro').textContent = C.INTRO;
     $('#footerOrg').textContent = C.ORG_NAME;
@@ -633,7 +703,7 @@
 
     // 지난번 목록을 먼저 보여 주고, 바뀐 것을 받아 오면 다시 그립니다.
     const cached = store.get(CACHE_KEY, null);
-    if (cached) { state.items = Object.values(cached.items).sort(byNewest); state.loaded = true; }
+    if (cached) { setItems(Object.values(cached.items)); state.loaded = true; }
     render();
     syncHash();
 
