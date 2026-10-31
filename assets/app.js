@@ -492,7 +492,7 @@
     form.reset();
     $('#editError').hidden = true;
     $('#saveProgress').textContent = '';
-    $('#editTitle').textContent = item ? '웹앱 수정' : '웹앱 등록';
+    $('#editTitle').textContent = item ? '자료 수정' : '자료 등록';
     edit.item = item;
     edit.thumb = item?.thumb || '';
     for (const key of ['title', 'url', 'duration', 'tags', 'description', 'prompt']) f[key].value = item?.[key] || '';
@@ -588,7 +588,7 @@
       if (edit.item) await api.update(edit.item.id, fields, password, state.session);
       else await api.create(fields, password, state.session, f.code.value.trim().toUpperCase());
       $('#editDialog').close();
-      toast(edit.item ? '수정했습니다.' : '웹앱을 등록했습니다. 고마워요!');
+      toast(edit.item ? '수정했습니다.' : '자료를 등록했습니다. 고마워요!');
       await refresh();
     } catch (ex) {
       err.textContent = ex?.code === 'permission-denied' && !edit.item && !state.session
