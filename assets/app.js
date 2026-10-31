@@ -743,9 +743,9 @@
     $('#intro').textContent = C.INTRO;
     $('#footerOrg').textContent = C.ORG_NAME;
     if (C.PRESIDENT?.name) {
-      $('#colophon').innerHTML = `<span class="role">회장</span><b>${esc(C.PRESIDENT.name)}</b>${C.PRESIDENT.org ? `<span>${esc(C.PRESIDENT.org)}</span>` : ''}`;
+      $('#colophon').innerHTML = `<span class="role">${esc(C.ORG_NAME)} GATE 회장</span><b>${esc(C.PRESIDENT.name)}</b>${C.PRESIDENT.org ? `<span>${esc(C.PRESIDENT.org)}</span>` : ''}`;
       $('#colophon').hidden = false;
-      $('#footerPresident').textContent = `회장 ${C.PRESIDENT.name}${C.PRESIDENT.org ? ` (${C.PRESIDENT.org})` : ''} · `;
+      $('#footerPresident').textContent = `${C.ORG_NAME} GATE 회장 ${C.PRESIDENT.name}${C.PRESIDENT.org ? ` (${C.PRESIDENT.org})` : ''} · `;
     }
     $('#year').textContent = new Date().getFullYear();
     $('#categorySelect').innerHTML = C.CATEGORIES.map((c) => `<option>${esc(c.key)}</option>`).join('');
