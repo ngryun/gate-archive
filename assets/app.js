@@ -221,7 +221,7 @@
 
   /* ───────── 상태 ───────── */
 
-  const state = { items: [], loaded: false, cat: ALL, target: ALL, q: '', session: null, view: store.get('gate-view', 'grid') === 'index' ? 'index' : 'grid' };
+  const state = { items: [], loaded: false, cat: ALL, target: ALL, q: '', session: null };
   const catOf = (key) => C.CATEGORIES.find((c) => c.key === key) || { key: key || '기타', color: '#6b6875' };
   const byNewest = (a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
   const canEdit = (item) => !!state.session || !item.createdBy;
@@ -307,26 +307,6 @@
     </article>`;
   }
 
-  // 색인 보기: 도록 뒤쪽의 작품 목록처럼 표로
-  function row(item) {
-    const cat = catOf(item.category);
-    const url = safeUrl(item.url);
-    const admin = state.session
-      ? `<span class="admin-tools"><button class="btn btn-line btn-sm" data-edit="${esc(item.id)}">수정</button>` +
-        `<button class="btn btn-line btn-sm btn-danger" data-del="${esc(item.id)}">삭제</button></span>`
-      : '';
-    return `<tr style="--c:${cat.color}">
-      <td class="t-no">${numberOf(item)}</td>
-      <td class="t-title"><a href="#${esc(item.id)}">${esc(item.title)}</a>${tagsHtml(item)}${admin}</td>
-      <td class="t-author">${esc(item.author || '—')}</td>
-      <td class="t-cat"><span class="cat"><i></i>${esc(cat.key)}</span></td>
-      <td class="t-target">${esc(split(item.target).join(', ') || '—')}</td>
-      <td class="t-dur">${esc(item.duration || '—')}</td>
-      <td class="t-date">${fmtDate(item.createdAt)}</td>
-      <td class="t-open">${url ? `<a class="text-btn" href="${esc(url)}" target="_blank" rel="noopener">열기 ↗</a>` : ''}</td>
-    </tr>`;
-  }
-
   // 화면에 들어올 때 하나씩 떠오르게
   const revealer = 'IntersectionObserver' in window
     ? new IntersectionObserver((entries) => {
@@ -344,7 +324,6 @@
   function renderGrid() {
     const grid = $('#grid');
     if (!state.loaded) {
-      grid.className = 'grid';
       grid.innerHTML = '<div class="skeleton"></div>'.repeat(3);
       $('#resultLine').textContent = '불러오는 중…';
       return;
@@ -353,20 +332,10 @@
     $('#resultLine').innerHTML = `<span>${state.q || state.cat !== ALL || state.target !== ALL
       ? `${list.length}점` + (state.q ? ` · “${esc(state.q)}” 검색 결과` : '')
       : `전체 ${list.length}점`}</span><span>최근 등록 순</span>`;
-    document.querySelectorAll('.view-btn').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === state.view)));
     if (!list.length) {
-      grid.className = 'grid';
       grid.innerHTML = `<div class="empty">${state.items.length ? '조건에 맞는 웹앱이 없습니다.' : '아직 등록된 웹앱이 없습니다. 첫 웹앱을 등록해 주세요!'}</div>`;
       return;
     }
-    if (state.view === 'index') {
-      grid.className = 'list-wrap';
-      grid.innerHTML = `<table class="list"><thead><tr>
-        <th>No.</th><th>제목</th><th class="t-author">제작</th><th class="t-cat">분류</th><th class="t-target">대상</th><th class="t-dur">시간</th><th class="t-date">등록</th><th class="t-open"></th>
-      </tr></thead><tbody>${list.map(row).join('')}</tbody></table>`;
-      return;
-    }
-    grid.className = 'grid';
     grid.innerHTML = list.map(card).join('');
     reveal(grid);
   }
@@ -673,8 +642,7 @@
       const t = e.target.closest('button, a');
       if (!t) return;
       const d = t.dataset;
-      if (d.view) { state.view = d.view === 'index' ? 'index' : 'grid'; store.set('gate-view', state.view); renderGrid(); }
-      else if (d.cat !== undefined) { state.cat = d.cat; render(); }
+      if (d.cat !== undefined) { state.cat = d.cat; render(); }
       else if (d.target !== undefined) { state.target = d.target; render(); }
       else if (d.open) location.hash = d.open;
       else if (d.prompt) { history.replaceState(null, '', '#' + d.prompt); openDetail(d.prompt, true); }
