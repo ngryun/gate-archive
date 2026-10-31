@@ -3,9 +3,10 @@ rules_version = '2';
 // 배포: 이 폴더에서 `firebase deploy --only firestore`
 //
 // items/{id}    웹앱 한 건. 누구나 읽음.
-// secrets/{id}  일반 등록자가 정한 비밀번호의 해시. 아무도 읽을 수 없음.
+// secrets/{id}  일반 등록자가 정한 비밀번호의 해시와 등록 때 넣은 인증 코드. 아무도 읽을 수 없음.
 // proofs/{id}   수정·삭제할 때 같은 요청 안에서 함께 쓰는 비밀번호 증명. 아무도 읽을 수 없음.
 // admins/{email} 관리자 Google 계정. 관리자는 모든 자료를 고치고 지울 수 있음.
+// settings/registration  { code: '회원 인증 코드' }. 아무도 읽을 수 없음. 콘솔에서 바꿈.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -69,7 +70,12 @@ service cloud.firestore {
 
     match /secrets/{id} {
       allow read: if false;
-      allow create: if freshProof(request.resource.data)
+      // 일반 등록은 회원 인증 코드가 맞아야 함 (대소문자 구분 없음)
+      allow create: if request.resource.data.keys().hasOnly(['h', 't', 'code'])
+        && request.resource.data.h is string && request.resource.data.h.size() == 64
+        && request.resource.data.t == request.time
+        && request.resource.data.code is string
+        && request.resource.data.code.upper() == get(/databases/$(database)/documents/settings/registration).data.code.upper()
         && !exists(/databases/$(database)/documents/items/$(id))
         && existsAfter(/databases/$(database)/documents/items/$(id));
       allow update, delete: if false;
@@ -79,6 +85,10 @@ service cloud.firestore {
       allow read: if false;
       allow create, update: if freshProof(request.resource.data);
       allow delete: if false;
+    }
+
+    match /settings/{name} {
+      allow read, write: if false;
     }
 
     match /admins/{email} {

@@ -19,7 +19,7 @@
     </div>
   </div>
   <div id="demoBar" class="demo-bar" hidden>
-    데모 모드입니다. 등록한 내용은 이 브라우저에만 저장됩니다. 맨 아래 <b>관리자 로그인</b>을 누르면 관리자로 바로 들어갑니다.
+    데모 모드입니다. 등록한 내용은 이 브라우저에만 저장됩니다. 회원 인증 코드는 <code>GATE</code>, 맨 아래 <b>관리자 로그인</b>을 누르면 관리자로 바로 들어갑니다.
   </div>
 
   <header class="wrap hero">
@@ -102,6 +102,12 @@
             <button class="btn btn-line" type="button" id="thumbClear" hidden>지우기</button>
           </div>
         </div>
+      </fieldset>
+
+      <fieldset id="codeField">
+        <legend>회원 인증 코드 <em>*</em></legend>
+        <input name="code" autocomplete="off" maxlength="64">
+        <p class="hint">연구회 회원 단톡방 등에서 안내받은 코드를 넣어 주세요.</p>
       </fieldset>
 
       <fieldset id="pwField">

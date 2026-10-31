@@ -23,9 +23,6 @@
     return Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('');
   }
 
-  // 등록·수정 화면에서 받는 항목 (createdAt·createdBy 는 처음 등록할 때만 정해짐)
-  const FIELDS = ['title', 'url', 'category', 'target', 'author', 'duration', 'tags', 'description', 'prompt', 'thumb'];
-
   /* ───────── 저장소 ─────────
    * Firestore 'items' 컬렉션에 웹앱 한 건이 문서 하나입니다.
    * 브라우저에 지난 목록을 저장해 두고, 다음 방문 때는 그 뒤에 바뀐 문서만 받아 옵니다(읽기 횟수 절약).
@@ -86,13 +83,13 @@
     signOut() { return this.au.signOut(this.auth); },
 
     // 관리자는 비밀번호 없이, 일반 등록자는 비밀번호 해시를 함께 씁니다.
-    async create(fields, password, admin) {
+    async create(fields, password, admin, code) {
       const { fs, db } = this;
       const id = newId();
       const now = fs.serverTimestamp();
       const batch = fs.writeBatch(db);
       batch.set(fs.doc(db, 'items', id), { ...fields, createdAt: now, updatedAt: now, createdBy: admin ? admin.email : '', deleted: false });
-      if (!admin) batch.set(fs.doc(db, 'secrets', id), { h: await hashPassword(id, password), t: now });
+      if (!admin) batch.set(fs.doc(db, 'secrets', id), { h: await hashPassword(id, password), t: now, code });
       await batch.commit();
     },
 
@@ -140,8 +137,9 @@
       if (admin) return;
       if (!item || item.createdBy || !secret || secret !== await hashPassword(id, password)) throw Object.assign(new Error(), { code: 'permission-denied' });
     },
-    async create(fields, password, admin) {
+    async create(fields, password, admin, code) {
       await wait(200);
+      if (!admin && code !== 'GATE') throw Object.assign(new Error(), { code: 'permission-denied' });
       const id = newId();
       const now = Date.now();
       if (!admin) store.set(this.secretKey, { ...store.get(this.secretKey, {}), [id]: await hashPassword(id, password) });
@@ -370,8 +368,10 @@
     const targets = split(item?.target);
     form.querySelectorAll('[name=target]').forEach((cb) => { cb.checked = targets.includes(cb.value); });
 
-    // 관리자는 비밀번호가 필요 없습니다.
+    // 관리자는 인증 코드와 비밀번호가 필요 없습니다. 인증 코드는 처음 등록할 때만 받습니다.
     const needPw = !state.session;
+    $('#codeField').hidden = !needPw || !!item;
+    f.code.required = needPw && !item;
     $('#pwField').hidden = !needPw;
     f.password.required = needPw;
     f.password.autocomplete = item ? 'current-password' : 'new-password';
@@ -437,12 +437,14 @@
       const password = f.password.value;
       if (!state.session && password.length < 4) throw new Error('비밀번호를 4자 이상 입력하세요.');
       if (edit.item) await api.update(edit.item.id, fields, password, state.session);
-      else await api.create(fields, password, state.session);
+      else await api.create(fields, password, state.session, f.code.value.trim().toUpperCase());
       $('#editDialog').close();
       toast(edit.item ? '수정했습니다.' : '웹앱을 등록했습니다. 고마워요!');
       await refresh();
     } catch (ex) {
-      err.textContent = friendlyError(ex);
+      err.textContent = ex?.code === 'permission-denied' && !edit.item && !state.session
+        ? '회원 인증 코드가 맞지 않습니다.'
+        : friendlyError(ex);
       err.hidden = false;
     } finally {
       btn.disabled = false;
