@@ -151,7 +151,7 @@ a { color: inherit; }
 .result-line { margin: 18px 0 44px; color: var(--ink-3); font-size: 12.5px; letter-spacing: .02em; display: flex; justify-content: space-between; gap: 16px; }
 
 /* ── 작품(카드) ── */
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 88px 48px; padding-bottom: 140px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 88px 48px; padding-bottom: 96px; }
 .card { display: flex; flex-direction: column; min-width: 0; }
 @media (prefers-reduced-motion: no-preference) {
   .card { opacity: 0; transform: translateY(26px); transition: opacity 1s var(--ease-out), transform 1s var(--ease-out); transition-delay: calc(var(--i, 0) * 90ms); }
@@ -293,9 +293,9 @@ a { color: inherit; }
 
 /* ── 바닥 · 알림 ── */
 .footer { border-top: 1px solid var(--ink); overflow: hidden; }
-.footer-mark { margin: 0; font-family: var(--serif); font-size: clamp(140px, 28vw, 440px); line-height: .78; letter-spacing: -.05em; margin-left: -.04em; padding-top: 4vw; color: transparent; -webkit-text-stroke: 1px var(--ink); user-select: none; transition: color 1.2s var(--ease-out); }
+.footer-mark { margin: 0; font-family: var(--serif); font-size: clamp(64px, 9vw, 120px); line-height: .8; letter-spacing: -.02em; margin-left: -.03em; padding-top: 28px; color: transparent; -webkit-text-stroke: 1px var(--ink); user-select: none; transition: color 1.2s var(--ease-out); }
 .footer-mark:hover { color: var(--ink); }
-.footer-meta { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 32px; padding: 22px 0 40px; border-top: 1px solid var(--line); }
+.footer-meta { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 32px; margin-top: 18px; padding: 16px 0 28px; border-top: 1px solid var(--line); }
 .footer-meta > * { text-transform: none; letter-spacing: .02em; font-size: 12.5px; }
 .footer-note { color: var(--ink-2); }
 .footer-meta a { text-decoration: none; color: var(--ink-3); }
