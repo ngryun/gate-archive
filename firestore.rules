@@ -1,0 +1,89 @@
+rules_version = '2';
+
+// 배포: 이 폴더에서 `firebase deploy --only firestore`
+//
+// items/{id}    웹앱 한 건. 누구나 읽음.
+// secrets/{id}  일반 등록자가 정한 비밀번호의 해시. 아무도 읽을 수 없음.
+// proofs/{id}   수정·삭제할 때 같은 요청 안에서 함께 쓰는 비밀번호 증명. 아무도 읽을 수 없음.
+// admins/{email} 관리자 Google 계정. 관리자는 모든 자료를 고치고 지울 수 있음.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && exists(/databases/$(database)/documents/admins/$(request.auth.token.email));
+    }
+
+    function validItem(d) {
+      return d.keys().hasOnly(['title', 'url', 'category', 'target', 'author', 'duration', 'tags',
+          'description', 'prompt', 'thumb', 'createdAt', 'updatedAt', 'createdBy', 'deleted'])
+        && d.title is string && d.title.size() > 0 && d.title.size() <= 100
+        && d.url is string && d.url.size() <= 2000 && d.url.matches('https?://.+')
+        && d.category is string && d.category.size() <= 30
+        && d.target is string && d.target.size() <= 100
+        && d.author is string && d.author.size() <= 60
+        && d.duration is string && d.duration.size() <= 30
+        && d.tags is string && d.tags.size() <= 200
+        && d.description is string && d.description.size() <= 3000
+        && d.prompt is string && d.prompt.size() <= 20000
+        && d.thumb is string && d.thumb.size() <= 150000
+        && d.createdBy is string
+        && d.updatedAt == request.time
+        && d.deleted == false;
+    }
+
+    // 삭제는 내용을 비우고 표시만 남깁니다 (방문자 브라우저가 바뀐 것만 받아 오도록)
+    function tombstone(d) {
+      return d.keys().hasOnly(['deleted', 'updatedAt']) && d.deleted == true && d.updatedAt == request.time;
+    }
+
+    // 이번 요청에서 쓴 증명의 해시가 등록 때 정한 해시와 같아야 함
+    function proven(id) {
+      let p = getAfter(/databases/$(database)/documents/proofs/$(id)).data;
+      return p.t == request.time && p.h == get(/databases/$(database)/documents/secrets/$(id)).data.h;
+    }
+
+    function freshProof(d) {
+      return d.keys().hasOnly(['h', 't']) && d.h is string && d.h.size() == 64 && d.t == request.time;
+    }
+
+    match /items/{id} {
+      allow read: if true;
+
+      allow create: if validItem(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && (isAdmin()
+            || (request.resource.data.createdBy == ''
+                && getAfter(/databases/$(database)/documents/secrets/$(id)).data.t == request.time));
+
+      allow update: if resource.data.deleted == false
+        && (tombstone(request.resource.data)
+            || (validItem(request.resource.data)
+                && request.resource.data.createdAt == resource.data.createdAt
+                && request.resource.data.createdBy == resource.data.createdBy))
+        && (isAdmin() || (resource.data.createdBy == '' && proven(id)));
+
+      allow delete: if isAdmin();
+    }
+
+    match /secrets/{id} {
+      allow read: if false;
+      allow create: if freshProof(request.resource.data)
+        && !exists(/databases/$(database)/documents/items/$(id))
+        && existsAfter(/databases/$(database)/documents/items/$(id));
+      allow update, delete: if false;
+    }
+
+    match /proofs/{id} {
+      allow read: if false;
+      allow create, update: if freshProof(request.resource.data);
+      allow delete: if false;
+    }
+
+    match /admins/{email} {
+      allow read: if request.auth != null && request.auth.token.email == email;
+      allow write: if false;
+    }
+  }
+}

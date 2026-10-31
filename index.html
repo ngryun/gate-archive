@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GATE 자료실 · 강원미술교육연구회</title>
+  <meta name="description" content="강원미술교육연구회(GATE) 선생님들이 함께 나누는 미술 수업 웹앱 자료실">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='16' height='16' fill='%23e4572e'/%3E%3Crect x='16' width='16' height='16' fill='%232e4fd8'/%3E%3Crect y='16' width='16' height='16' fill='%23d39b00'/%3E%3Crect x='16' y='16' width='16' height='16' fill='%2312876f'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div id="adminBar" class="admin-bar" hidden>
+    <div class="wrap admin-bar-inner">
+      <span><b id="adminName"></b> 선생님, 관리자로 로그인했습니다.</span>
+      <span class="admin-bar-actions">
+        <button class="btn btn-ghost-light" id="logoutBtn" type="button">로그아웃</button>
+      </span>
+    </div>
+  </div>
+  <div id="demoBar" class="demo-bar" hidden>
+    데모 모드입니다. 등록한 내용은 이 브라우저에만 저장됩니다. 맨 아래 <b>관리자 로그인</b>을 누르면 관리자로 바로 들어갑니다.
+  </div>
+
+  <header class="wrap hero">
+    <div class="hero-text">
+      <p class="eyebrow" id="orgName"></p>
+      <h1 class="title">
+        <span class="gate" aria-label="GATE"><i>G</i><i>A</i><i>T</i><i>E</i></span>
+        <span id="siteTitleRest">자료실</span>
+      </h1>
+      <p class="intro" id="intro"></p>
+    </div>
+    <div class="hero-side">
+    <button class="btn btn-accent btn-lg" id="newItemBtn" type="button">+ 웹앱 등록</button>
+    <label class="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="searchInput" type="search" placeholder="웹앱 검색 (예: 색채, 감상, 퀴즈)" autocomplete="off">
+    </label>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <nav class="filters" aria-label="자료 필터">
+      <div class="chip-row" id="categoryChips" role="group" aria-label="분류"></div>
+      <div class="chip-row small" id="targetChips" role="group" aria-label="대상"></div>
+    </nav>
+    <p class="result-line" id="resultLine"></p>
+    <section class="grid" id="grid" aria-live="polite"></section>
+  </main>
+
+  <footer class="wrap footer">
+    <span>© <span id="year"></span> <span id="footerOrg"></span></span>
+    <button class="link-btn" id="loginOpenBtn" type="button">관리자 로그인</button>
+  </footer>
+
+  <!-- 자세히 -->
+  <dialog id="detailDialog" class="modal">
+    <div class="modal-inner" id="detailBody"></div>
+  </dialog>
+
+  <!-- QR 크게 보기 -->
+  <dialog id="qrDialog" class="modal modal-qr">
+    <div class="modal-inner qr-inner">
+      <button class="icon-btn qr-close" type="button" data-close aria-label="닫기">×</button>
+      <h2 id="qrTitle"></h2>
+      <div class="qr-box" id="qrBox"></div>
+      <p class="qr-url" id="qrUrl"></p>
+    </div>
+  </dialog>
+
+  <!-- 웹앱 등록 · 수정 -->
+  <dialog id="editDialog" class="modal">
+    <form class="modal-inner form" id="editForm">
+      <div class="modal-head">
+        <h2 id="editTitle">웹앱 등록</h2>
+        <button class="icon-btn" type="button" data-close aria-label="닫기">×</button>
+      </div>
+      <label>제목 <em>*</em><input name="title" required maxlength="100"></label>
+      <label>웹앱 주소 <em>*</em><input name="url" type="url" required placeholder="https://" maxlength="2000"></label>
+      <div class="form-row">
+        <label>분류 <em>*</em><select name="category" id="categorySelect" required></select></label>
+        <label>제작 (이름·소속)<input name="author" placeholder="홍길동(춘천중)" maxlength="60"></label>
+      </div>
+      <fieldset>
+        <legend>대상</legend>
+        <div class="check-row" id="targetChecks"></div>
+      </fieldset>
+      <div class="form-row">
+        <label>활용 시간<input name="duration" placeholder="10분, 1차시" maxlength="30"></label>
+        <label>태그 <span class="hint-inline">쉼표로 구분</span><input name="tags" placeholder="색채, 퀴즈" maxlength="200"></label>
+      </div>
+      <label>소개<textarea name="description" rows="4" maxlength="3000" placeholder="어떤 수업에서 어떻게 쓰는 웹앱인지 적어 주세요."></textarea></label>
+      <label>만든 과정 · 프롬프트 <span class="hint-inline">다른 선생님이 고쳐 쓸 수 있게</span><textarea name="prompt" rows="5" maxlength="20000" placeholder="사용한 AI 도구와 프롬프트, 고친 과정 등"></textarea></label>
+
+      <fieldset>
+        <legend>대표 이미지 <span class="hint-inline">웹앱 화면 캡처를 추천합니다 · 자동으로 줄여 저장</span></legend>
+        <div class="thumb-pick">
+          <div class="thumb-preview" id="thumbPreview"></div>
+          <div>
+            <label class="btn btn-line">이미지 선택<input type="file" id="thumbInput" accept="image/*" hidden></label>
+            <button class="btn btn-line" type="button" id="thumbClear" hidden>지우기</button>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset id="pwField">
+        <legend id="pwLegend">비밀번호 <em>*</em></legend>
+        <input name="password" type="password" autocomplete="new-password" minlength="4" maxlength="64">
+        <p class="hint" id="pwHint"></p>
+      </fieldset>
+
+      <p class="form-error" id="editError" hidden></p>
+      <div class="form-foot">
+        <span class="progress" id="saveProgress"></span>
+        <button class="btn btn-line" type="button" data-close>취소</button>
+        <button class="btn btn-dark" type="submit" id="saveBtn">저장</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 삭제할 때 비밀번호 -->
+  <dialog id="pwDialog" class="modal modal-sm">
+    <form class="modal-inner form" id="pwForm">
+      <div class="modal-head">
+        <h2>웹앱 삭제</h2>
+        <button class="icon-btn" type="button" data-close aria-label="닫기">×</button>
+      </div>
+      <p class="pw-target" id="pwTarget"></p>
+      <label>등록할 때 정한 비밀번호<input name="password" type="password" autocomplete="current-password" required></label>
+      <p class="form-error" id="pwError" hidden></p>
+      <button class="btn btn-danger-fill btn-block" type="submit">삭제</button>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
