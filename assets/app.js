@@ -24,8 +24,8 @@
     img.dataset.tries = n;
     setTimeout(() => { if (img.isConnected || img.dataset.offscreen) img.src = img.src.replace(/&n=\d+$/, '') + '&n=' + n; }, 4000);
   }
-  // 이미지가 오기 전(또는 없을 때) 자리에 두는 추상 구성. 자료 ID로 모양이 정해져 늘 같은 그림이 나옵니다.
-  const PIGMENTS = ['#2b44b8', '#d8432a', '#e0a526', '#17735c'];
+  // 이미지가 오기 전(또는 없을 때) 자리에 두는 팝아트 한 컷. 자료 ID로 모양이 정해져 늘 같은 그림이 나옵니다.
+  const PIGMENTS = ['#1f5fd1', '#e5232a', '#ffd60a', '#f7a3b4'];
   function seeded(seed) {
     let h = 2166136261;
     for (const ch of String(seed)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
@@ -41,35 +41,49 @@
     const n = (a, b) => Math.round(a + r() * (b - a));
     const pick = (a) => a[Math.floor(r() * a.length)];
     const others = PIGMENTS.filter((c) => c.toLowerCase() !== String(color).toLowerCase());
-    const c2 = pick(others);
-    const c3 = pick(others.filter((c) => c !== c2));
-    const ink = '#141414';
+    const dot = pick(others.filter((c) => c !== '#ffd60a'));
+    const c2 = pick(others.filter((c) => c !== dot));
+    const ink = '#111111';
+    const id = String(seed).replace(/[^\w-]/g, '');
     const left = r() < 0.5; // 큰 원을 왼쪽에 둘지
-    const base = n(66, 80);
-    const s = [];
-    const line = `fill="none" stroke="${ink}" stroke-width=".7"`;
-    // 큰 원: 분류색으로 칠한 유일한 면
-    const R = n(20, 34);
-    const cx = left ? n(28, 64) : n(96, 132);
-    s.push(`<circle cx="${cx}" cy="${n(R, base - 4)}" r="${R}" fill="${color}" opacity=".92"/>`);
-    // 맞은편에 바닥선 위로 선 도형: 사각(빗금) · 반원 · 삼각 — 선으로만
-    const w = n(24, 40);
-    const bx = left ? n(76, 150 - w) : n(10, 84 - w);
-    const kind = Math.floor(r() * 3);
-    if (kind === 0) s.push(`<rect x="${bx}" y="${base - w}" width="${w}" height="${w}" fill="url(#h-${seed})"/><rect x="${bx}" y="${base - w}" width="${w}" height="${w}" ${line}/>`);
-    else if (kind === 1) s.push(`<path d="M${bx} ${base}a${w / 2} ${w / 2} 0 0 1 ${w} 0z" ${line}/>`);
-    else s.push(`<path d="M${bx} ${base}l${w / 2} ${-w}l${w / 2} ${w}z" ${line}/>`);
-    // 모서리 사분원: 두 번째 색, 작게
-    if (r() < 0.6) {
-      const q = n(12, 22);
-      s.push(`<path d="M0 0h${q}a${q} ${q} 0 0 1 -${q} ${q}z"${left ? ' transform="matrix(-1 0 0 1 160 0)"' : ''} fill="${c2}" opacity=".9"/>`);
+    const base = n(70, 82);
+    const line = `stroke="${ink}" stroke-width="2.4" stroke-linejoin="round"`;
+    const s = [`<defs><pattern id="d-${id}" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(${n(15, 30)})"><circle cx="2.5" cy="2.5" r="1.3" fill="${dot}"/></pattern></defs>`];
+    // 바탕: 흰 종이 위로 비스듬히 깔린 벤데이 점
+    s.push('<rect width="160" height="100" fill="#fff"/>');
+    const y0 = n(0, 30), y1 = n(40, 90);
+    s.push(left ? `<path d="M160 0V100H${n(40, 90)}L${n(90, 140)} 0z" fill="url(#d-${id})"/>` : `<path d="M0 ${y0}L160 ${y1}V100H0z" fill="url(#d-${id})"/>`);
+    // 폭발 별: 리히텐슈타인의 WHAAM!
+    if (r() < 0.55) {
+      const bx = left ? n(108, 138) : n(22, 52), by = n(22, 40), k = n(9, 12), R1 = n(18, 26), R0 = R1 * 0.55;
+      const pts = Array.from({ length: k * 2 }, (_, i) => {
+        const ang = (Math.PI * i) / k - Math.PI / 2, rr = i % 2 ? R0 : R1 * (0.8 + r() * 0.3);
+        return `${(bx + rr * Math.cos(ang)).toFixed(1)},${(by + rr * Math.sin(ang)).toFixed(1)}`;
+      });
+      s.push(`<polygon points="${pts.join(' ')}" fill="${c2}" ${line}/>`);
     }
-    void c3;
-    s.push(`<line x1="0" y1="${base}.5" x2="160" y2="${base}.5" stroke="${ink}" stroke-width=".6"/>`);
-    if (r() < 0.55) s.push(`<line x1="${n(0, 50)}" y1="100" x2="${n(110, 160)}" y2="${n(0, 24)}" stroke="${ink}" stroke-width=".6"/>`);
-    else { const x = n(20, 140); s.push(`<line x1="${x}" y1="${n(4, 20)}" x2="${x}" y2="100" stroke="${ink}" stroke-width=".6"/>`); }
-    s.push(`<circle cx="${n(12, 148)}" cy="${n(8, 26)}" r="${n(2, 4)}" fill="${ink}"/>`);
-    s.unshift(`<defs><pattern id="h-${seed}" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="3" stroke="${ink}" stroke-width=".45"/></pattern></defs>`);
+    // 큰 원: 분류색, 굵은 먹선과 하이라이트
+    const R = n(20, 30);
+    const cx = left ? n(30, 60) : n(100, 130), cy = n(R + 4, base - 6);
+    // 빨강은 흰 바탕의 붉은 원(일장기)으로 읽히지 않게 둥근 네모로
+    if (/^#e5232a$/i.test(color)) s.push(`<rect x="${cx - R}" y="${cy - R}" width="${R * 2}" height="${R * 2}" rx="${R * 0.3}" fill="${color}" ${line} transform="rotate(${n(-12, 12)} ${cx} ${cy})"/>`);
+    else {
+      s.push(`<circle cx="${cx}" cy="${cy}" r="${R}" fill="${color}" ${line}/>`);
+      s.push(`<path d="M${cx - R * 0.55} ${cy - R * 0.2}a${R * 0.6} ${R * 0.6} 0 0 1 ${R * 0.45} ${-R * 0.4}" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>`);
+    }
+    // 맞은편 도형: 사각 · 반원 · 삼각
+    const w = n(22, 34);
+    const bx = left ? n(80, 146 - w) : n(10, 76 - w);
+    const kind = Math.floor(r() * 3);
+    const fill = pick(['#fff', '#ffd60a', `url(#d-${id})`]);
+    if (kind === 0) s.push(`<rect x="${bx}" y="${base - w}" width="${w}" height="${w}" fill="${fill}" ${line}/>`);
+    else if (kind === 1) s.push(`<path d="M${bx} ${base}a${w / 2} ${w / 2} 0 0 1 ${w} 0z" fill="${fill}" ${line}/>`);
+    else s.push(`<path d="M${bx} ${base}l${w / 2} ${-w}l${w / 2} ${w}z" fill="${fill}" ${line}/>`);
+    // 바닥: 검정 띠
+    s.push(`<rect x="-2" y="${base}" width="164" height="${102 - base}" fill="${ink}"/>`);
+    // 속도선
+    const sx = left ? n(84, 120) : n(16, 50), sy = n(8, 18);
+    for (let i = 0; i < 3; i++) s.push(`<line x1="${sx}" y1="${sy + i * 5}" x2="${sx + n(16, 30)}" y2="${sy + i * 5}" stroke="${ink}" stroke-width="2" stroke-linecap="round"/>`);
     return `<svg class="art" viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${s.join('')}</svg>`;
   }
 

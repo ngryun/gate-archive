@@ -17,12 +17,12 @@ window.GATE_CONFIG = {
 
   // 웹앱 분류. 순서대로 필터에 나옵니다. color 는 카드·필터 색입니다.
   CATEGORIES: [
-    { key: '감상', color: '#2b44b8' },
-    { key: '표현', color: '#d8432a' },
-    { key: '미술 게임', color: '#6b4aa8' },
-    { key: '수업 도구', color: '#17735c' },
-    { key: '평가·피드백', color: '#d49a1c' },
-    { key: '기타', color: '#b63a6b' },
+    { key: '감상', color: '#1f5fd1' },
+    { key: '표현', color: '#e5232a' },
+    { key: '미술 게임', color: '#ffd60a' },
+    { key: '수업 도구', color: '#18a058' },
+    { key: '평가·피드백', color: '#f7a3b4' },
+    { key: '기타', color: '#111111' },
   ],
 
   // 대상 (여러 개 고를 수 있음)
